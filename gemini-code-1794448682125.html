@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>구간 반복 재생 (02:50 ~ 03:20)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .video-container {
+      position: relative;
+      width: 100%;
+      max-width: 960px;
+      aspect-ratio: 16 / 9;
+    }
+    #player {
+      width: 100%;
+      height: 100%;
+    }
+    .controls {
+      margin-top: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    button {
+      background: #ff0000;
+      color: #fff;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: #272727;
+    }
+    .badge {
+      font-size: 13px;
+      color: #aaa;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="video-container">
+    <div id="player"></div>
+  </div>
+
+  <div class="controls">
+    <button id="unmuteBtn" onclick="toggleMute()">🔊 소리 켜기</button>
+    <button class="secondary" onclick="restartLoop()">↺ 2:50 처음으로</button>
+  </div>
+  <div class="badge">구간 반복 중: 02:50 ~ 03:20</div>
+
+  <script>
+    const VIDEO_ID = '-tuR5iEjAHQ';
+    const START_SEC = 170; // 2분 50초 (2 * 60 + 50)
+    const END_SEC = 200;   // 3분 20초 (3 * 60 + 20)
+
+    let player;
+    let checkInterval;
+
+    // YouTube IFrame API 비동기 로드
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        videoId: VIDEO_ID,
+        playerVars: {
+          autoplay: 1,
+          mute: 1,          // 모바일 브라우저 자동 재생 허용을 위한 초기 무음
+          start: START_SEC,
+          playsinline: 1,   // iOS 전체화면 강제 전환 방지
+          rel: 0
+        },
+        events: {
+          onReady: onPlayerReady,
+          onStateChange: onPlayerStateChange
+        }
+      });
+    }
+
+    function onPlayerReady(event) {
+      event.target.seekTo(START_SEC, true);
+      event.target.playVideo();
+    }
+
+    function onPlayerStateChange(event) {
+      if (event.data === YT.PlayerState.PLAYING) {
+        // 0.25초마다 현재 재생 시간 확인 후 3분 20초 도달 시 2분 50초로 복귀
+        clearInterval(checkInterval);
+        checkInterval = setInterval(() => {
+          const currentTime = player.getCurrentTime();
+          if (currentTime >= END_SEC || currentTime < START_SEC - 1) {
+            player.seekTo(START_SEC, true);
+          }
+        }, 250);
+      } else {
+        clearInterval(checkInterval);
+      }
+    }
+
+    function toggleMute() {
+      const btn = document.getElementById('unmuteBtn');
+      if (player.isMuted()) {
+        player.unMute();
+        player.setVolume(100);
+        btn.textContent = '🔇 음소거';
+        btn.style.background = '#272727';
+      } else {
+        player.mute();
+        btn.textContent = '🔊 소리 켜기';
+        btn.style.background = '#ff0000';
+      }
+    }
+
+    function restartLoop() {
+      player.seekTo(START_SEC, true);
+      player.playVideo();
+    }
+  </script>
+</body>
+</html>
